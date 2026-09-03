@@ -242,3 +242,18 @@ async function init() {
 }
 
 init();
+
+const tabButtons = document.querySelectorAll('.tab-btn');
+const chatSidebar = document.getElementById('chat-sidebar');
+const chatView = document.getElementById('chat-view');
+const piiView = document.getElementById('pii-view');
+
+tabButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    tabButtons.forEach((b) => b.classList.toggle('active', b === btn));
+    const view = btn.dataset.view;
+    chatSidebar.hidden = view !== 'chat';
+    chatView.hidden = view !== 'chat';
+    piiView.hidden = view !== 'pii';
+  });
+});

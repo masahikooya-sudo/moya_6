@@ -1,12 +1,37 @@
 import express from 'express';
+import multer from 'multer';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  PII_CATEGORIES,
+  MAX_CHUNKS,
+  extractXlsx,
+  extractPdf,
+  scanTextWithPatterns,
+  buildLlmMessages,
+  parseLlmFindings,
+  mergeFindings,
+} from './lib/pii.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PORT = process.env.PORT || 3000;
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://127.0.0.1:11434';
 const MODEL_NAME = process.env.MODEL_NAME || 'gemma3';
+
+const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_UPLOAD_BYTES },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext !== '.xlsx' && ext !== '.pdf') {
+      cb(new Error('対応していないファイル形式です(.xlsxまたは.pdfのみ対応)'));
+      return;
+    }
+    cb(null, true);
+  },
+});
 
 const app = express();
 app.use(express.json());
@@ -89,6 +114,119 @@ app.post('/api/chat', async (req, res) => {
   }
 
   res.end();
+});
+
+async function callOllamaJson(model, messages) {
+  let res;
+  try {
+    res = await fetch(`${OLLAMA_HOST}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, messages, stream: false, format: 'json' }),
+    });
+  } catch (err) {
+    const connErr = new Error('Ollamaに接続できませんでした');
+    connErr.isConnectionError = true;
+    throw connErr;
+  }
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Ollamaエラー: ${res.status} ${text}`);
+  }
+  const data = await res.json();
+  return data.message?.content || '';
+}
+
+app.get('/api/pii-categories', (_req, res) => {
+  res.json({ categories: PII_CATEGORIES });
+});
+
+app.post('/api/pii-check', upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'ファイルが指定されていません。' });
+  }
+  const model = typeof req.body.model === 'string' && req.body.model.trim() ? req.body.model.trim() : MODEL_NAME;
+  const ext = path.extname(req.file.originalname).toLowerCase();
+
+  let extracted;
+  try {
+    extracted = ext === '.xlsx' ? await extractXlsx(req.file.buffer) : await extractPdf(req.file.buffer);
+  } catch (err) {
+    return res.status(400).json({
+      error: `ファイルの解析に失敗しました。正しい${ext}ファイルか確認してください(パスワード保護されている場合は解除してから再度お試しください)。`,
+    });
+  }
+
+  const { records, chunks } = extracted;
+  if (records.length === 0) {
+    return res.json({
+      fileName: req.file.originalname,
+      model,
+      isClean: true,
+      findings: [],
+      warnings: ['ファイルからテキストを抽出できませんでした(空のファイル、または画像のみのPDF等の可能性があります)。'],
+      categories: PII_CATEGORIES,
+    });
+  }
+
+  const rawFindings = [];
+  for (const record of records) {
+    for (const f of scanTextWithPatterns(record.text)) {
+      rawFindings.push({ ...f, location: record.location, source: 'pattern' });
+    }
+  }
+
+  const warnings = [];
+  const chunksToScan = chunks.slice(0, MAX_CHUNKS);
+  if (chunks.length > MAX_CHUNKS) {
+    warnings.push(
+      `ファイルが大きいため、AIによる確認は先頭の${MAX_CHUNKS}箇所のみ実施しました(正規表現による機械的なチェックは全体に実施済みです)。`
+    );
+  }
+
+  let ollamaUnavailable = false;
+  for (const chunk of chunksToScan) {
+    if (ollamaUnavailable) break;
+    try {
+      const raw = await callOllamaJson(model, buildLlmMessages(chunk.text));
+      for (const f of parseLlmFindings(raw)) {
+        rawFindings.push({ ...f, location: chunk.location, source: 'llm' });
+      }
+    } catch (err) {
+      if (err.isConnectionError) {
+        ollamaUnavailable = true;
+        warnings.push(
+          `Ollamaに接続できなかったため、AIによる確認は実施していません (${OLLAMA_HOST})。正規表現による機械的なチェックの結果のみ表示しています。`
+        );
+      } else {
+        warnings.push(`「${chunk.location}」のAI解析に失敗しました: ${err.message}`);
+      }
+    }
+  }
+
+  const categoryOrder = new Map(PII_CATEGORIES.map((c, i) => [c.key, i]));
+  const findings = mergeFindings(rawFindings).sort(
+    (a, b) => categoryOrder.get(a.category) - categoryOrder.get(b.category)
+  );
+
+  res.json({
+    fileName: req.file.originalname,
+    model,
+    isClean: findings.length === 0,
+    findings,
+    warnings,
+    categories: PII_CATEGORIES,
+  });
+});
+
+app.use((err, _req, res, _next) => {
+  if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({ error: `ファイルサイズが大きすぎます(上限 ${MAX_UPLOAD_BYTES / (1024 * 1024)}MB)。` });
+  }
+  if (err) {
+    return res.status(400).json({ error: err.message || 'リクエストの処理に失敗しました。' });
+  }
+  res.status(500).json({ error: '不明なエラーが発生しました。' });
 });
 
 app.listen(PORT, () => {

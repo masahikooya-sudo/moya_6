@@ -8,26 +8,60 @@
 </head>
 <body>
   <div class="app">
-    <aside class="sidebar">
-      <button id="new-chat-btn" class="new-chat-btn">+ 新しいチャット</button>
-      <div id="conversation-list" class="conversation-list"></div>
-    </aside>
+    <nav class="top-tabs">
+      <button type="button" class="tab-btn active" data-view="chat">チャット</button>
+      <button type="button" class="tab-btn" data-view="pii">個人情報チェック</button>
+    </nav>
 
-    <div class="main">
-      <header>
-        <h1>Local Gemma Chat</h1>
-        <select id="model-select" class="model-select"></select>
-      </header>
+    <div class="app-body">
+      <aside class="sidebar" id="chat-sidebar">
+        <button id="new-chat-btn" class="new-chat-btn">+ 新しいチャット</button>
+        <div id="conversation-list" class="conversation-list"></div>
+      </aside>
 
-      <main id="chat" class="chat"></main>
+      <div class="main" id="chat-view">
+        <header>
+          <h1>Local Gemma Chat</h1>
+          <select id="model-select" class="model-select"></select>
+        </header>
 
-      <form id="chat-form" class="composer">
-        <textarea id="prompt" placeholder="メッセージを入力…" rows="1" required></textarea>
-        <button type="submit" id="send-btn">送信</button>
-      </form>
+        <main id="chat" class="chat"></main>
+
+        <form id="chat-form" class="composer">
+          <textarea id="prompt" placeholder="メッセージを入力…" rows="1" required></textarea>
+          <button type="submit" id="send-btn">送信</button>
+        </form>
+      </div>
+
+      <div class="main" id="pii-view" hidden>
+        <header>
+          <h1>個人情報チェック</h1>
+          <select id="pii-model-select" class="model-select"></select>
+        </header>
+
+        <div class="pii-content">
+          <p class="pii-description">
+            マスキング済みの <code>.xlsx</code> / <code>.pdf</code> ファイルをアップロードすると、
+            正規表現によるパターンマッチングとAI(Gemma)の両方で個人情報が残っていないかを確認します。
+          </p>
+
+          <form id="pii-form" class="pii-form">
+            <input type="file" id="pii-file" accept=".xlsx,.pdf" required />
+            <button type="submit" id="pii-check-btn">チェックする</button>
+          </form>
+
+          <p class="pii-caveat">
+            ※ このチェックは補助的なものです。100%の検出を保証するものではないため、
+            結果によらず目視でも必ず確認してください。
+          </p>
+
+          <div id="pii-result" class="pii-result"></div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script src="app.js"></script>
+  <script src="pii.js"></script>
 </body>
 </html>
