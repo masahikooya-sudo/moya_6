@@ -12,12 +12,21 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/api/config', (_req, res) => {
-  res.json({ model: MODEL_NAME });
+app.get('/api/models', async (_req, res) => {
+  try {
+    const tagsRes = await fetch(`${OLLAMA_HOST}/api/tags`);
+    if (!tagsRes.ok) throw new Error(`status ${tagsRes.status}`);
+    const data = await tagsRes.json();
+    const models = (data.models || []).map((m) => m.name).sort();
+    res.json({ models, default: MODEL_NAME });
+  } catch (err) {
+    res.json({ models: [], default: MODEL_NAME });
+  }
 });
 
 app.post('/api/chat', async (req, res) => {
   const { messages } = req.body;
+  const model = typeof req.body.model === 'string' && req.body.model.trim() ? req.body.model.trim() : MODEL_NAME;
   if (!Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'messages array is required' });
   }
@@ -27,7 +36,7 @@ app.post('/api/chat', async (req, res) => {
     ollamaRes = await fetch(`${OLLAMA_HOST}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: MODEL_NAME, messages, stream: true }),
+      body: JSON.stringify({ model, messages, stream: true }),
     });
   } catch (err) {
     return res.status(502).json({

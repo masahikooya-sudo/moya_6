@@ -2,6 +2,7 @@
   color-scheme: light dark;
   --bg: #f7f7f8;
   --panel: #ffffff;
+  --sidebar: #f0f1f3;
   --text: #1a1a1a;
   --muted: #6b7280;
   --border: #e5e7eb;
@@ -10,17 +11,20 @@
   --user-text: #ffffff;
   --bot-bubble: #f1f3f5;
   --bot-text: #1a1a1a;
+  --hover: #e5e7eb;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0f1115;
     --panel: #171a21;
+    --sidebar: #12141a;
     --text: #e6e6e6;
     --muted: #9aa0a6;
     --border: #2a2e37;
     --bot-bubble: #232733;
     --bot-text: #e6e6e6;
+    --hover: #232733;
   }
 }
 
@@ -36,10 +40,94 @@ body {
 
 .app {
   display: flex;
-  flex-direction: column;
   height: 100vh;
-  max-width: 800px;
-  margin: 0 auto;
+}
+
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 10px;
+}
+
+.new-chat-btn {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.new-chat-btn:hover {
+  background: var(--hover);
+}
+
+.conversation-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.conversation-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.conversation-item:hover {
+  background: var(--hover);
+}
+
+.conversation-item.active {
+  background: var(--hover);
+  font-weight: 600;
+}
+
+.conversation-item .title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversation-item .delete-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+  visibility: hidden;
+}
+
+.conversation-item:hover .delete-btn {
+  visibility: visible;
+}
+
+.conversation-item .delete-btn:hover {
+  color: #dc2626;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   background: var(--panel);
 }
 
@@ -56,13 +144,14 @@ header h1 {
   margin: 0;
 }
 
-.badge {
-  font-size: 0.75rem;
-  color: var(--muted);
+.model-select {
+  font-size: 0.8rem;
+  color: var(--text);
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 2px 10px;
+  padding: 4px 10px;
+  max-width: 220px;
 }
 
 .chat {

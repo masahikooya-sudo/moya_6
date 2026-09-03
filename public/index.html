@@ -8,17 +8,24 @@
 </head>
 <body>
   <div class="app">
-    <header>
-      <h1>Local Gemma Chat</h1>
-      <span id="model-badge" class="badge">…</span>
-    </header>
+    <aside class="sidebar">
+      <button id="new-chat-btn" class="new-chat-btn">+ 新しいチャット</button>
+      <div id="conversation-list" class="conversation-list"></div>
+    </aside>
 
-    <main id="chat" class="chat"></main>
+    <div class="main">
+      <header>
+        <h1>Local Gemma Chat</h1>
+        <select id="model-select" class="model-select"></select>
+      </header>
 
-    <form id="chat-form" class="composer">
-      <textarea id="prompt" placeholder="メッセージを入力…" rows="1" required></textarea>
-      <button type="submit" id="send-btn">送信</button>
-    </form>
+      <main id="chat" class="chat"></main>
+
+      <form id="chat-form" class="composer">
+        <textarea id="prompt" placeholder="メッセージを入力…" rows="1" required></textarea>
+        <button type="submit" id="send-btn">送信</button>
+      </form>
+    </div>
   </div>
 
   <script src="app.js"></script>
