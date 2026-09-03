@@ -1,0 +1,31 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # NVIDIA GPUを使う場合はコメントを外す(要 nvidia-container-toolkit)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - ollama
+    ports:
+      - "3000:3000"
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      MODEL_NAME: ${MODEL_NAME:-gemma4}
+      PORT: 3000
+
+volumes:
+  ollama_data:
