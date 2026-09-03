@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Local Gemma Chat</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Local Gemma Chat</h1>
+      <span id="model-badge" class="badge">…</span>
+    </header>
+
+    <main id="chat" class="chat"></main>
+
+    <form id="chat-form" class="composer">
+      <textarea id="prompt" placeholder="メッセージを入力…" rows="1" required></textarea>
+      <button type="submit" id="send-btn">送信</button>
+    </form>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
