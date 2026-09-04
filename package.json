@@ -1,0 +1,19 @@
+{
+  "name": "local-gemma-chat",
+  "version": "1.0.0",
+  "description": "Local LLM chat web app powered by Ollama and Gemma",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2",
+    "multer": "^2.3.0",
+    "pdf-parse": "^2.4.5"
+  }
+}
