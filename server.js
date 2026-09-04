@@ -117,6 +117,8 @@ app.post('/api/chat', async (req, res) => {
   res.end();
 });
 
+const OLLAMA_TIMEOUT_MS = Number(process.env.OLLAMA_TIMEOUT_MS) || 5 * 60 * 1000; // 5分
+
 async function callOllamaJson(model, messages) {
   let res;
   try {
@@ -124,9 +126,22 @@ async function callOllamaJson(model, messages) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model, messages, stream: false, format: 'json' }),
+      signal: AbortSignal.timeout(OLLAMA_TIMEOUT_MS),
     });
   } catch (err) {
-    const connErr = new Error('Ollamaに接続できませんでした');
+    // fetch()の失敗理由は「そもそも接続できない(DNS解決失敗/接続拒否)」と
+    // 「応答がタイムアウトした(モデルの推論に時間がかかりすぎている等)」の
+    // 2通りが考えられるため、区別して原因が分かるメッセージにする。
+    if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+      const timeoutErr = new Error(
+        `Ollamaの応答が${OLLAMA_TIMEOUT_MS / 1000}秒以内に返ってきませんでした(タイムアウト)。` +
+          'CPUのみで大きいモデルを動かしている場合、推論に時間がかかっている可能性があります。'
+      );
+      timeoutErr.isTimeout = true;
+      throw timeoutErr;
+    }
+    const reason = err.cause?.code || err.cause?.message || err.message;
+    const connErr = new Error(`Ollamaに接続できませんでした(${reason})`);
     connErr.isConnectionError = true;
     throw connErr;
   }
@@ -208,8 +223,11 @@ app.post('/api/pii-check', upload.single('file'), async (req, res) => {
       if (err.isConnectionError) {
         ollamaUnavailable = true;
         warnings.push(
-          `Ollamaに接続できなかったため、AIによる確認は実施していません (${OLLAMA_HOST})。正規表現による機械的なチェックの結果のみ表示しています。`
+          `Ollamaに接続できなかったため、AIによる確認は実施していません (${OLLAMA_HOST})。正規表現による機械的なチェックの結果のみ表示しています。詳細: ${err.message}`
         );
+      } else if (err.isTimeout) {
+        ollamaUnavailable = true;
+        warnings.push(`${err.message} 以降のAIによる確認は中止し、正規表現による機械的なチェックの結果のみ表示しています。`);
       } else {
         warnings.push(`「${chunk.location}」のAI解析に失敗しました: ${err.message}`);
       }
