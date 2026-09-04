@@ -7,6 +7,7 @@ const piiResultEl = document.getElementById('pii-result');
 const SOURCE_LABELS = {
   pattern: 'パターン検出',
   llm: 'AI(Gemma)検出',
+  column: '列見出し検出',
 };
 
 async function loadPiiModels() {

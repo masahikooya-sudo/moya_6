@@ -157,7 +157,7 @@ app.post('/api/pii-check', upload.single('file'), async (req, res) => {
     });
   }
 
-  const { records, chunks } = extracted;
+  const { records, chunks, columnFindings = [] } = extracted;
   if (records.length === 0) {
     return res.json({
       fileName: req.file.originalname,
@@ -174,6 +174,9 @@ app.post('/api/pii-check', upload.single('file'), async (req, res) => {
     for (const f of scanTextWithPatterns(record.text)) {
       rawFindings.push({ ...f, location: record.location, source: 'pattern' });
     }
+  }
+  for (const f of columnFindings) {
+    rawFindings.push({ ...f, source: 'column' });
   }
 
   const warnings = [];
