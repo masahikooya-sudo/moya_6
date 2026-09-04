@@ -19,10 +19,8 @@ const PORT = process.env.PORT || 3000;
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://127.0.0.1:11434';
 const MODEL_NAME = process.env.MODEL_NAME || 'gemma4';
 
-const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_UPLOAD_BYTES },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     if (ext !== '.xlsx' && ext !== '.pdf') {
@@ -220,9 +218,6 @@ app.post('/api/pii-check', upload.single('file'), async (req, res) => {
 });
 
 app.use((err, _req, res, _next) => {
-  if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(400).json({ error: `ファイルサイズが大きすぎます(上限 ${MAX_UPLOAD_BYTES / (1024 * 1024)}MB)。` });
-  }
   if (err) {
     return res.status(400).json({ error: err.message || 'リクエストの処理に失敗しました。' });
   }
