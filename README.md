@@ -30,14 +30,16 @@ Ollama を別途インストールする必要はありません。
    docker compose exec ollama ollama pull gemma4
    ```
 
-   > **注記:** 2026年9月時点で Ollama のライブラリに `gemma4` タグが存在しない場合は、
-   > 代わりに `gemma3`（例: `docker compose exec ollama ollama pull gemma3`）などの
-   > 利用可能な Gemma のタグを取得し、`MODEL_NAME` をそれに合わせて設定してください。
-   > 利用可能なモデル一覧は https://ollama.com/library で確認できます。
+   > **注記:** Gemma 4 は `e2b` / `e4b` / `12b` / `26b`(MoE) / `31b` の5サイズが
+   > `gemma4` ライブラリで公開されています。タグを省略した `gemma4`(=`gemma4:latest`)は
+   > オンデバイス向けの `e4b`(約9.6GB)を取得します。マシンのスペックに応じて
+   > `docker compose exec ollama ollama pull gemma4:12b` のように明示的にサイズを
+   > 指定することもできます。利用可能なタグ一覧は
+   > https://ollama.com/library/gemma4 で確認できます。
 
 3. ブラウザで http://localhost:3000 を開いてチャットする。
 
-使用するモデルを変えたい場合は、`.env` に `MODEL_NAME=gemma3` のように設定してから
+使用するモデル(サイズ)を変えたい場合は、`.env` に `MODEL_NAME=gemma4:12b` のように設定してから
 `docker compose up -d --build` を実行してください（`.env.example` 参照）。
 NVIDIA GPU を使いたい場合は `docker-compose.yml` 内の `deploy.resources` のコメントを
 外し、[nvidia-container-toolkit](https://github.com/NVIDIA/nvidia-container-toolkit) を
