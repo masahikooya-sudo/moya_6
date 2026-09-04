@@ -8,6 +8,7 @@ const SOURCE_LABELS = {
   pattern: 'パターン検出',
   llm: 'AI(Gemma)検出',
   column: '列見出し検出',
+  label: 'ラベル検出',
 };
 
 async function loadPiiModels() {
@@ -36,7 +37,9 @@ function escapeHtml(text) {
 function renderResult(data) {
   const parts = [];
 
-  if (data.isClean) {
+  if (data.extractionFailed) {
+    parts.push('<div class="pii-summary pii-summary-warn">❓ ファイルの内容を読み取れなかったため、判定できませんでした。</div>');
+  } else if (data.isClean) {
     parts.push('<div class="pii-summary pii-summary-ok">✅ 指定した種類の個人情報は検出されませんでした。</div>');
   } else {
     parts.push(`<div class="pii-summary pii-summary-ng">⚠️ ${data.findings.length}件の個人情報の可能性がある記述が見つかりました。内容を確認してください。</div>`);

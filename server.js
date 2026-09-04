@@ -8,6 +8,7 @@ import {
   extractXlsx,
   extractPdf,
   scanTextWithPatterns,
+  scanLabeledFields,
   buildLlmMessages,
   parseLlmFindings,
   mergeFindings,
@@ -162,9 +163,14 @@ app.post('/api/pii-check', upload.single('file'), async (req, res) => {
     return res.json({
       fileName: req.file.originalname,
       model,
-      isClean: true,
+      isClean: false,
+      extractionFailed: true,
       findings: [],
-      warnings: ['ファイルからテキストを抽出できませんでした(空のファイル、または画像のみのPDF等の可能性があります)。'],
+      warnings: [
+        'ファイルからテキストを抽出できなかったため、個人情報の有無を判定できませんでした' +
+          '(空のファイル、またはスキャン画像のみのPDF等の可能性があります)。' +
+          '画像のみのPDFは現時点では非対応です。目視で確認してください。',
+      ],
       categories: PII_CATEGORIES,
     });
   }
@@ -173,6 +179,9 @@ app.post('/api/pii-check', upload.single('file'), async (req, res) => {
   for (const record of records) {
     for (const f of scanTextWithPatterns(record.text)) {
       rawFindings.push({ ...f, location: record.location, source: 'pattern' });
+    }
+    for (const f of scanLabeledFields(record.text)) {
+      rawFindings.push({ ...f, location: record.location, source: 'label' });
     }
   }
   for (const f of columnFindings) {

@@ -345,6 +345,11 @@ header h1 {
   color: #dc2626;
 }
 
+.pii-summary-warn {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
 .pii-warnings {
   margin: 0;
   padding-left: 20px;
