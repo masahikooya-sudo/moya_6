@@ -9,7 +9,10 @@
 - 個人情報チェック機能(`.xlsx` / `.pdf` をアップロードし、マスキング漏れがないか
   正規表現とAI(Gemma)の両方でチェック)
 
-## 必要なもの（Docker）
+社内ネットワーク/VPN限定・Google Workspace SSO連携でIDCFクラウド上に社員向けに公開する
+手順は [DEPLOY_IDCF.md](./DEPLOY_IDCF.md) を参照してください。
+
+## 必要なもの(ローカルで試す場合、Docker)
 
 - Docker / Docker Compose
 
