@@ -17,7 +17,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PORT = process.env.PORT || 3000;
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://127.0.0.1:11434';
-const MODEL_NAME = process.env.MODEL_NAME || 'gemma3';
+const MODEL_NAME = process.env.MODEL_NAME || 'gemma4';
 
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB
 const upload = multer({

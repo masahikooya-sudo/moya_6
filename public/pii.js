@@ -13,7 +13,7 @@ async function loadPiiModels() {
   try {
     const res = await fetch('/api/models');
     const data = await res.json();
-    const names = data.models?.length ? data.models : [data.default || 'gemma3'];
+    const names = data.models?.length ? data.models : [data.default || 'gemma4'];
     piiModelSelect.innerHTML = '';
     for (const name of names) {
       const opt = document.createElement('option');
@@ -22,7 +22,7 @@ async function loadPiiModels() {
       piiModelSelect.appendChild(opt);
     }
   } catch {
-    piiModelSelect.innerHTML = '<option value="gemma3">gemma3</option>';
+    piiModelSelect.innerHTML = '<option value="gemma4">gemma4</option>';
   }
 }
 

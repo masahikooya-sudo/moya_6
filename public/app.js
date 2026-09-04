@@ -11,7 +11,7 @@ const CURRENT_KEY = 'gemma-chat-current-id';
 
 let conversations = [];
 let currentId = null;
-let defaultModel = 'gemma3';
+let defaultModel = 'gemma4';
 
 function loadConversations() {
   try {
