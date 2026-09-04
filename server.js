@@ -118,6 +118,10 @@ app.post('/api/chat', async (req, res) => {
 });
 
 const OLLAMA_TIMEOUT_MS = Number(process.env.OLLAMA_TIMEOUT_MS) || 5 * 60 * 1000; // 5分
+// Ollamaのnum_predict既定値は実質無制限(-1)。個人情報チェックの応答は短いJSONのみで
+// 十分なため、上限を設けて「終了しそこねて延々と生成し続ける」ことによる
+// タイムアウトを防ぐ。
+const OLLAMA_NUM_PREDICT = Number(process.env.OLLAMA_NUM_PREDICT) || 500;
 
 async function callOllamaJson(model, messages) {
   let res;
@@ -125,7 +129,13 @@ async function callOllamaJson(model, messages) {
     res = await fetch(`${OLLAMA_HOST}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, messages, stream: false, format: 'json' }),
+      body: JSON.stringify({
+        model,
+        messages,
+        stream: false,
+        format: 'json',
+        options: { num_predict: OLLAMA_NUM_PREDICT, temperature: 0 },
+      }),
       signal: AbortSignal.timeout(OLLAMA_TIMEOUT_MS),
     });
   } catch (err) {

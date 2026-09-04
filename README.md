@@ -82,7 +82,10 @@ docker compose down
    | `PORT`               | `3000`                       | Web アプリの待受ポート                        |
    | `OLLAMA_HOST`        | `http://127.0.0.1:11434`     | Ollama サーバーのアドレス                     |
    | `MODEL_NAME`         | `gemma4`                     | 使用する Ollama モデル名/タグ                 |
-   | `OLLAMA_TIMEOUT_MS`  | `300000`(5分)                | 個人情報チェックでOllamaの応答を待つ上限時間。CPUのみで大きいモデルを使う場合、推論に時間がかかりタイムアウトすることがあるため、必要に応じて延長してください |
+   | `OLLAMA_TIMEOUT_MS`  | `300000`(5分)                | 個人情報チェックでOllamaの応答を待つ上限時間           |
+   | `OLLAMA_NUM_PREDICT` | `500`                        | AI検出1回あたりの最大生成トークン数(Ollamaの`num_predict`。既定は実質無制限のため上限を設定し、生成が終わらないことによるタイムアウトを防ぐ) |
+   | `PII_CHUNK_CHAR_LIMIT` | `3000`                      | 個人情報チェックでAIに1回に渡すテキストの最大文字数。小さくするほど1回あたりの応答は速くなるが、呼び出し回数が増える |
+   | `PII_MAX_CHUNKS`     | `40`                         | 個人情報チェックでAIに渡すチャンク数の上限(超過分は正規表現/列見出し/ラベル検出のみ) |
 
 4. アプリを起動する。
 
@@ -168,6 +171,23 @@ docker compose down
   Ollamaへの接続が必要です)。
 - 「Ollamaの応答が◯◯秒以内に返ってきませんでした(タイムアウト)」と表示される場合は、
   接続自体はできているものの、Ollamaでの推論に時間がかかりすぎています。CPUのみの
-  環境で `gemma4:12b` のような大きめのモデルを使っていると発生しやすいです。
-  `gemma4:e2b` / `gemma4:e4b` のような軽量なモデルに切り替えるか、環境変数
-  `OLLAMA_TIMEOUT_MS` で待機時間を延長してください。
+  環境では以下を順に試してください。
+
+  1. **軽量なモデルに切り替える**(最も効果が大きい): `gemma4:12b` のような大きめの
+     モデルではなく `gemma4:e2b` / `gemma4:e4b` を使う。
+     ```bash
+     docker compose exec ollama ollama pull gemma4:e4b
+     ```
+     `.env` の `MODEL_NAME=gemma4:e4b` に変更して `docker compose up -d --build`。
+  2. **1回のAI呼び出しを軽くする**: 環境変数 `PII_CHUNK_CHAR_LIMIT` を `1500` 程度に
+     下げると、1回あたりの応答が速くなります(その分、呼び出し回数は増えます)。
+  3. **生成トークン数の上限を確認する**: `OLLAMA_NUM_PREDICT`(既定500)で個人情報
+     チェックのAI応答の長さに上限を設けている。極端に小さくすると出力が途中で
+     切れてJSONとして解析できなくなる場合があるので、下げすぎないよう注意。
+  4. **CPUスレッド数を明示的に指定する**: Ollamaはデフォルトで自動的にスレッド数を
+     決めるが、環境によっては物理コア数を明示した方が速くなることがある。
+     `docker-compose.yml` の `ollama` サービスに
+     `environment: OLLAMA_NUM_THREAD: "8"` のようにVMの物理コア数を指定してみる
+     (詳細は [Ollamaの公式ドキュメント](https://github.com/ollama/ollama)を参照)。
+  5. それでも遅い場合は、環境変数 `OLLAMA_TIMEOUT_MS` で待機時間を延長するか、
+     GPU BOOSTタイプのインスタンスへの変更を検討してください。
