@@ -1,0 +1,53 @@
+# このリポジトリの Dockerfile でビルドしたイメージを使う。
+# 事前に以下を実行してレジストリにpushし、image の値を実際のものに置き換えること。
+#
+#   docker build -t <レジストリ>/local-gemma-chat:latest .
+#   docker push <レジストリ>/local-gemma-chat:latest
+#
+# プライベートレジストリの場合は imagePullSecrets のコメントを外し、
+# 事前に `kubectl -n local-gemma-chat create secret docker-registry regcred ...`
+# で認証情報を作成しておくこと。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  namespace: local-gemma-chat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app
+  template:
+    metadata:
+      labels:
+        app: app
+    spec:
+      # imagePullSecrets:
+      #   - name: regcred
+      containers:
+        - name: app
+          image: <YOUR_REGISTRY>/local-gemma-chat:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: app-config
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /api/models
+              port: 3000
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/models
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 30

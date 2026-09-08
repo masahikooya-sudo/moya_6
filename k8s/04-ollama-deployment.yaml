@@ -1,0 +1,53 @@
+# CPUのみのノードでOllamaを動かすDeployment。
+# GPUノードを使う場合は resources.limits に nvidia.com/gpu を追加し、
+# 該当ノードに nodeSelector / tolerations を設定してください(README参照)。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: local-gemma-chat
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # PVCがReadWriteOnceのため、ローリング更新時に2台同時起動させない
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          ports:
+            - containerPort: 11434
+          volumeMounts:
+            - name: ollama-data
+              mountPath: /root/.ollama
+          # CPUのみでも 12b 等の大きいモデルを動かせるよう、最低限のリクエストを
+          # 確保しています。ノードのスペックに応じて調整してください。
+          resources:
+            requests:
+              cpu: "2"
+              memory: "8Gi"
+            limits:
+              cpu: "8"
+              memory: "16Gi"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 11434
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 11434
+            initialDelaySeconds: 15
+            periodSeconds: 30
+      volumes:
+        - name: ollama-data
+          persistentVolumeClaim:
+            claimName: ollama-data

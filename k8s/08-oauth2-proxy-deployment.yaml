@@ -1,0 +1,69 @@
+# Google WorkspaceログインでStreamに認証をかけ、認証済みユーザーのみ app に転送する。
+# TLSはこのPod内では終端せず、平文(HTTP)でIngress/ロードバランサからの接続を受ける
+# 構成にしている(TLS終端はIngress側で行う。09-ingress.yaml参照)。
+# 社内のみに到達可能なIngress/ロードバランサと組み合わせて使うこと。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oauth2-proxy
+  namespace: local-gemma-chat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oauth2-proxy
+  template:
+    metadata:
+      labels:
+        app: oauth2-proxy
+    spec:
+      containers:
+        - name: oauth2-proxy
+          image: quay.io/oauth2-proxy/oauth2-proxy:latest
+          args:
+            - --http-address=0.0.0.0:4180
+            - --provider=google
+            - --upstream=http://app:3000
+            - --cookie-secure=true
+            - --cookie-samesite=lax
+            - --reverse-proxy=true
+            - --skip-provider-button=true
+          ports:
+            - containerPort: 4180
+          envFrom:
+            - configMapRef:
+                name: app-config
+          env:
+            - name: OAUTH2_PROXY_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: GOOGLE_CLIENT_ID
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: GOOGLE_CLIENT_SECRET
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: OAUTH2_PROXY_COOKIE_SECRET
+            - name: OAUTH2_PROXY_EMAIL_DOMAINS
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: ALLOWED_EMAIL_DOMAIN
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 4180
+            initialDelaySeconds: 3
+            periodSeconds: 10
