@@ -41,20 +41,35 @@ async function loadCategoryChips() {
   }
 }
 
+function setModelUnavailable(message) {
+  piiModelSelect.innerHTML = `<option value="">${escapeHtml(message)}</option>`;
+  piiModelSelect.disabled = true;
+  piiCheckBtn.disabled = true;
+  piiResultEl.innerHTML = `<div class="pii-summary pii-summary-warn">⚠️ ${escapeHtml(message)}</div>`;
+}
+
 async function loadPiiModels() {
   try {
     const res = await fetch('/api/models');
     const data = await res.json();
-    const names = data.models?.length ? data.models : [data.default || 'gemma4'];
+    if (!data.models?.length) {
+      // Ollamaが未接続、またはモデルが1つも取得されていない状態。
+      // dataclass.default(タグなしのモデル名)を選択肢として表示すると、
+      // 実際にはOllama側に存在せず「model not found」エラーになるだけなので、
+      // 選べない状態にして原因が分かるメッセージを表示する。
+      setModelUnavailable('Ollamaに接続できないか、モデルが取得されていません。ollama pullでモデルを取得してから再読み込みしてください。');
+      return;
+    }
+    piiModelSelect.disabled = false;
     piiModelSelect.innerHTML = '';
-    for (const name of names) {
+    for (const name of data.models) {
       const opt = document.createElement('option');
       opt.value = name;
       opt.textContent = name;
       piiModelSelect.appendChild(opt);
     }
   } catch {
-    piiModelSelect.innerHTML = '<option value="gemma4">gemma4</option>';
+    setModelUnavailable('モデル一覧を取得できませんでした。ページを再読み込みしてください。');
   }
 }
 
@@ -132,6 +147,11 @@ piiForm.addEventListener('submit', async (e) => {
   const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
   if (ext !== '.xlsx' && ext !== '.pdf') {
     piiResultEl.innerHTML = '<div class="pii-summary pii-summary-ng">対応していないファイル形式です(.xlsxまたは.pdfのみ対応)。</div>';
+    return;
+  }
+
+  if (!piiModelSelect.value) {
+    piiResultEl.innerHTML = '<div class="pii-summary pii-summary-warn">⚠️ 利用可能なモデルがありません。Ollamaの状態を確認してから再読み込みしてください。</div>';
     return;
   }
 
