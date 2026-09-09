@@ -50,73 +50,6 @@ app.get('/api/models', async (_req, res) => {
   }
 });
 
-app.post('/api/chat', async (req, res) => {
-  const { messages } = req.body;
-  const model = typeof req.body.model === 'string' && req.body.model.trim() ? req.body.model.trim() : MODEL_NAME;
-  if (!Array.isArray(messages) || messages.length === 0) {
-    return res.status(400).json({ error: 'messages array is required' });
-  }
-
-  let ollamaRes;
-  try {
-    ollamaRes = await fetch(`${OLLAMA_HOST}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, messages, stream: true }),
-    });
-  } catch (err) {
-    return res.status(502).json({
-      error: `Ollamaに接続できませんでした (${OLLAMA_HOST})。Ollamaが起動しているか確認してください。`,
-    });
-  }
-
-  if (!ollamaRes.ok || !ollamaRes.body) {
-    const text = await ollamaRes.text().catch(() => '');
-    return res.status(502).json({ error: `Ollamaエラー: ${ollamaRes.status} ${text}` });
-  }
-
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.setHeader('Transfer-Encoding', 'chunked');
-
-  const reader = ollamaRes.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      let newlineIndex;
-      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-        const line = buffer.slice(0, newlineIndex).trim();
-        buffer = buffer.slice(newlineIndex + 1);
-        if (!line) continue;
-
-        let json;
-        try {
-          json = JSON.parse(line);
-        } catch {
-          continue;
-        }
-
-        if (json.message?.content) {
-          res.write(json.message.content);
-        }
-        if (json.done) {
-          reader.cancel().catch(() => {});
-          break;
-        }
-      }
-    }
-  } catch (err) {
-    // クライアント側の切断などは無視してストリームを終了する
-  }
-
-  res.end();
-});
-
 const OLLAMA_TIMEOUT_MS = Number(process.env.OLLAMA_TIMEOUT_MS) || 5 * 60 * 1000; // 5分
 // Ollamaのnum_predict既定値は実質無制限(-1)。個人情報チェックの応答は短いJSONのみで
 // 十分なため、上限を設けて「終了しそこねて延々と生成し続ける」ことによる
@@ -270,6 +203,6 @@ app.use((err, _req, res, _next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Local Gemma chat app listening on http://localhost:${PORT}`);
+  console.log(`Personal information check app listening on http://localhost:${PORT}`);
   console.log(`Using Ollama model "${MODEL_NAME}" at ${OLLAMA_HOST}`);
 });

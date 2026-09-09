@@ -158,9 +158,8 @@ resources:
 - **スケール**: `app` は複数レプリカに増やせます(`kubectl scale deploy/app --replicas=2`)。
   `ollama` はPVCが`ReadWriteOnce`のため複数レプリカにはできません(GPUノード込みで
   高可用性が必要な場合は構成の見直しが必要です)。
-- **会話履歴・アップロードファイル**: Docker版と同様、会話履歴は各社員のブラウザの
-  localStorageにのみ保存され、アップロードしたファイルもサーバー・ディスクには
-  保存されません。
+- **アップロードファイル**: Docker版と同様、アップロードしたファイルや検出結果は
+  サーバー・ディスクには保存されません。
 - **チューニング**: 応答が遅い/タイムアウトする場合は `k8s/01-configmap.yaml` の
   `OLLAMA_NUM_PREDICT` / `PII_CHUNK_CHAR_LIMIT` / `OLLAMA_TIMEOUT_MS` や、
   軽量モデル(`gemma4:e2b` / `gemma4:e4b`)への切り替えを検討してください

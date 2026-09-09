@@ -1,7 +1,7 @@
 {
   "name": "local-gemma-chat",
   "version": "1.0.0",
-  "description": "Local LLM chat web app powered by Ollama and Gemma",
+  "description": "Local PII check web app for xlsx/pdf files, powered by Ollama and Gemma",
   "type": "module",
   "main": "server.js",
   "scripts": {
