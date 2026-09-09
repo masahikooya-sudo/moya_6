@@ -1,0 +1,22 @@
+# 機密ではない設定値。実際の値は kubectl apply 前にこのファイルを編集するか、
+# `kubectl -n local-gemma-chat edit configmap app-config` で変更してください。
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: local-gemma-chat
+data:
+  # docker-compose.yml と同様、Kubernetes Service名(ollama)で名前解決される
+  OLLAMA_HOST: "http://ollama:11434"
+  # CPUのみのノードではまず軽量な e2b/e4b から試すことを推奨(README参照)
+  MODEL_NAME: "gemma4"
+  PORT: "3000"
+  # 個人情報チェックのAI呼び出し関連チューニング(README「Ollamaのチューニング」参照)
+  OLLAMA_TIMEOUT_MS: "300000"
+  OLLAMA_NUM_PREDICT: "500"
+  PII_CHUNK_CHAR_LIMIT: "3000"
+  PII_MAX_CHUNKS: "40"
+  # ログインを許可する自社のGoogle Workspaceドメイン
+  ALLOWED_EMAIL_DOMAIN: "example.co.jp"
+  # 社員がアクセスするURLに合わせたコールバックURL
+  OAUTH2_PROXY_REDIRECT_URL: "https://llm.internal.example.co.jp/oauth2/callback"

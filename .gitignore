@@ -1,0 +1,5 @@
+node_modules/
+.env
+.env.production
+certs/
+k8s/*.local.yaml

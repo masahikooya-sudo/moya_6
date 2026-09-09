@@ -1,0 +1,14 @@
+# ClusterIP(クラスタ内部のみ)。oauth2-proxyを経由しない直接アクセスを防ぐため、
+# ホストやインターネットには一切公開しない。
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+  namespace: local-gemma-chat
+spec:
+  type: ClusterIP
+  selector:
+    app: app
+  ports:
+    - port: 3000
+      targetPort: 3000

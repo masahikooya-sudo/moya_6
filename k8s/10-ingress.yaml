@@ -1,0 +1,36 @@
+# クラスタにIngressコントローラー(RancherがデフォルトでNGINX Ingressを使うことが
+# 多い)が入っている前提のIngress定義。他のコントローラー(Traefik等)の場合は
+# annotationsをそのコントローラー用に読み替えてください。
+#
+# TLS証明書のSecretは事前に作成しておくこと(例):
+#   kubectl -n local-gemma-chat create secret tls app-tls \
+#     --cert=fullchain.pem --key=privkey.pem
+#
+# VPN限定・社内ネットワーク限定でアクセスさせたい場合、whitelist-source-range に
+# 実際の社内/VPNのCIDRを指定すること(ここが未設定だとIngressコントローラーの
+# ロードバランサに到達できる全員がアクセスできてしまう点に注意)。
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+  namespace: local-gemma-chat
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/whitelist-source-range: "203.0.113.0/24" # 社内/VPNのCIDRに置き換える
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - llm.internal.example.co.jp # 実際のホスト名に置き換える
+      secretName: app-tls
+  rules:
+    - host: llm.internal.example.co.jp # 実際のホスト名に置き換える
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: oauth2-proxy
+                port:
+                  number: 4180

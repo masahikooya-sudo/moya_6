@@ -1,0 +1,57 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    # ホストには公開しない(appコンテナからのみ内部ネットワーク経由でアクセス)
+    volumes:
+      - ollama_data:/root/.ollama
+    # NVIDIA GPUを使う場合はコメントを外す(要 nvidia-container-toolkit)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - ollama
+    # ホストには公開しない(oauth2-proxy経由でのみアクセス可能にする)
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      MODEL_NAME: ${MODEL_NAME:-gemma4}
+      PORT: 3000
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:latest
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "443:4180"
+      # ACME HTTP-01チャレンジを使う場合のみ80も開ける(それ以外は不要)
+      # - "80:8080"
+    volumes:
+      - ./certs:/certs:ro
+    environment:
+      OAUTH2_PROXY_PROVIDER: google
+      OAUTH2_PROXY_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      OAUTH2_PROXY_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET}
+      OAUTH2_PROXY_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAIN}
+      OAUTH2_PROXY_REDIRECT_URL: ${OAUTH2_PROXY_REDIRECT_URL}
+      OAUTH2_PROXY_UPSTREAMS: http://app:3000
+      OAUTH2_PROXY_HTTP_ADDRESS: ""
+      OAUTH2_PROXY_HTTPS_ADDRESS: "0.0.0.0:4180"
+      OAUTH2_PROXY_TLS_CERT_FILE: /certs/fullchain.pem
+      OAUTH2_PROXY_TLS_KEY_FILE: /certs/privkey.pem
+      OAUTH2_PROXY_COOKIE_SECURE: "true"
+      OAUTH2_PROXY_COOKIE_SAMESITE: "lax"
+      OAUTH2_PROXY_REVERSE_PROXY: "true"
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"
+
+volumes:
+  ollama_data:
