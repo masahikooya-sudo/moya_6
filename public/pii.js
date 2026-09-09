@@ -3,6 +3,9 @@ const piiFileInput = document.getElementById('pii-file');
 const piiCheckBtn = document.getElementById('pii-check-btn');
 const piiModelSelect = document.getElementById('pii-model-select');
 const piiResultEl = document.getElementById('pii-result');
+const dropzone = document.getElementById('dropzone');
+const dropzoneFilename = document.getElementById('dropzone-filename');
+const categoryChipsEl = document.getElementById('category-chips');
 
 const SOURCE_LABELS = {
   pattern: 'パターン検出',
@@ -10,6 +13,33 @@ const SOURCE_LABELS = {
   column: '列見出し検出',
   label: 'ラベル検出',
 };
+
+let categoryIndex = new Map(); // category key -> color index
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function badgeClass(categoryKey) {
+  const idx = categoryIndex.has(categoryKey) ? categoryIndex.get(categoryKey) : 14;
+  return `badge-cat-${idx}`;
+}
+
+async function loadCategoryChips() {
+  try {
+    const res = await fetch('/api/pii-categories');
+    const data = await res.json();
+    const categories = data.categories || [];
+    categories.forEach((c, i) => categoryIndex.set(c.key, i));
+    categoryChipsEl.innerHTML = categories
+      .map((c) => `<span class="chip ${badgeClass(c.key)}">${escapeHtml(c.label)}</span>`)
+      .join('');
+  } catch {
+    categoryChipsEl.innerHTML = '';
+  }
+}
 
 async function loadPiiModels() {
   try {
@@ -28,11 +58,34 @@ async function loadPiiModels() {
   }
 }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+function setSelectedFile(file) {
+  if (!file) return;
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  piiFileInput.files = dt.files;
+  dropzoneFilename.textContent = file.name;
 }
+
+dropzone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropzone.classList.add('dragover');
+});
+
+dropzone.addEventListener('dragleave', () => {
+  dropzone.classList.remove('dragover');
+});
+
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  const file = e.dataTransfer.files?.[0];
+  if (file) setSelectedFile(file);
+});
+
+piiFileInput.addEventListener('change', () => {
+  const file = piiFileInput.files?.[0];
+  dropzoneFilename.textContent = file ? file.name : '';
+});
 
 function renderResult(data) {
   const parts = [];
@@ -54,24 +107,18 @@ function renderResult(data) {
   }
 
   if (data.findings?.length) {
-    const byCategory = new Map();
-    for (const f of data.findings) {
-      if (!byCategory.has(f.category)) byCategory.set(f.category, []);
-      byCategory.get(f.category).push(f);
-    }
     const categoryLabel = (key) => data.categories?.find((c) => c.key === key)?.label || key;
 
-    parts.push('<table class="pii-table"><thead><tr><th>種類</th><th>検出内容</th><th>検出方法</th><th>場所</th></tr></thead><tbody>');
-    for (const [category, items] of byCategory) {
-      for (const item of items) {
-        const sources = item.sources.map((s) => SOURCE_LABELS[s] || s).join(' / ');
-        const locations = item.locations.join(', ');
-        parts.push(
-          `<tr><td>${escapeHtml(categoryLabel(category))}</td><td>${escapeHtml(item.text)}</td><td>${escapeHtml(sources)}</td><td>${escapeHtml(locations)}</td></tr>`
-        );
-      }
+    parts.push('<div class="pii-table-wrap"><table class="pii-table"><thead><tr><th>種類</th><th>検出内容</th><th>検出方法</th><th>場所</th></tr></thead><tbody>');
+    for (const item of data.findings) {
+      const sources = item.sources.map((s) => SOURCE_LABELS[s] || s).join(' / ');
+      const locations = item.locations.join(', ');
+      const badge = `<span class="chip ${badgeClass(item.category)}">${escapeHtml(categoryLabel(item.category))}</span>`;
+      parts.push(
+        `<tr><td>${badge}</td><td>${escapeHtml(item.text)}</td><td>${escapeHtml(sources)}</td><td class="location">${escapeHtml(locations)}</td></tr>`
+      );
     }
-    parts.push('</tbody></table>');
+    parts.push('</tbody></table></div>');
   }
 
   piiResultEl.innerHTML = parts.join('\n');
@@ -89,7 +136,7 @@ piiForm.addEventListener('submit', async (e) => {
   }
 
   piiCheckBtn.disabled = true;
-  piiResultEl.innerHTML = '<div class="pii-loading">チェック中です。AIによる解析にはファイルサイズに応じて時間がかかる場合があります…</div>';
+  piiResultEl.innerHTML = '<div class="pii-loading"><span class="spinner"></span>チェック中です。AIによる解析にはファイルサイズに応じて時間がかかる場合があります…</div>';
 
   const formData = new FormData();
   formData.append('file', file);
@@ -109,4 +156,5 @@ piiForm.addEventListener('submit', async (e) => {
   }
 });
 
+loadCategoryChips();
 loadPiiModels();

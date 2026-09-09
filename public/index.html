@@ -7,32 +7,57 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="app">
-    <div class="main">
-      <header>
-        <h1>個人情報チェック</h1>
-        <select id="pii-model-select" class="model-select"></select>
-      </header>
+  <div class="page">
+    <header class="hero">
+      <div class="hero-inner">
+        <div class="hero-icon">🛡️</div>
+        <div class="hero-text">
+          <h1>個人情報チェック</h1>
+          <p>マスキング漏れをローカルLLM(Gemma)でダブルチェック</p>
+        </div>
+        <select id="pii-model-select" class="model-select" title="使用するモデル"></select>
+      </div>
+    </header>
 
-      <div class="pii-content">
+    <main class="content">
+      <section class="card intro-card">
         <p class="pii-description">
           マスキング済みの <code>.xlsx</code> / <code>.pdf</code> ファイルをアップロードすると、
-          正規表現によるパターンマッチングとAI(Gemma)の両方で個人情報が残っていないかを確認します。
+          正規表現によるパターンマッチングとAI(Gemma)の両方で、以下の個人情報が
+          残っていないかを確認します。
         </p>
+        <div id="category-chips" class="chip-row"></div>
+      </section>
 
+      <section class="card upload-card">
         <form id="pii-form" class="pii-form">
-          <input type="file" id="pii-file" accept=".xlsx,.pdf" required />
-          <button type="submit" id="pii-check-btn">チェックする</button>
+          <label id="dropzone" class="dropzone" for="pii-file">
+            <div class="dropzone-icon">📄</div>
+            <div class="dropzone-text">
+              <strong>ファイルをドラッグ&ドロップ</strong>
+              <span>またはクリックして選択(.xlsx / .pdf、最大50MB)</span>
+            </div>
+            <span id="dropzone-filename" class="dropzone-filename"></span>
+            <input type="file" id="pii-file" accept=".xlsx,.pdf" required hidden />
+          </label>
+
+          <button type="submit" id="pii-check-btn">
+            <span class="btn-icon">🔍</span>チェックする
+          </button>
         </form>
 
         <p class="pii-caveat">
           ※ このチェックは補助的なものです。100%の検出を保証するものではないため、
           結果によらず目視でも必ず確認してください。
         </p>
+      </section>
 
-        <div id="pii-result" class="pii-result"></div>
-      </div>
-    </div>
+      <section id="pii-result" class="pii-result"></section>
+    </main>
+
+    <footer class="page-footer">
+      <p>アップロードしたファイルや検出結果は保存されません。すべてこの端末/サーバー内で処理されます。</p>
+    </footer>
   </div>
 
   <script src="pii.js"></script>
