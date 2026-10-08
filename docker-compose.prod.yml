@@ -45,6 +45,7 @@ services:
       # - "80:8080"
     volumes:
       - ./certs:/certs:ro
+      - ./oauth2-proxy-templates:/templates:ro
     environment:
       OAUTH2_PROXY_PROVIDER: google
       OAUTH2_PROXY_CLIENT_ID: ${GOOGLE_CLIENT_ID}
@@ -64,7 +65,16 @@ services:
       OAUTH2_PROXY_COOKIE_SECURE: "true"
       OAUTH2_PROXY_COOKIE_SAMESITE: "lax"
       OAUTH2_PROXY_REVERSE_PROXY: "true"
-      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"
+      # falseにして、ログイン画面(アプリと同じ配色の「Googleでログイン」ボタン)を
+      # 経由させる。trueだとログイン画面を経由せずGoogleへ直接遷移してしまい、
+      # ログアウト後に独自のログイン画面を表示できなくなる。
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "false"
+      # ログイン画面をアプリと同じ配色にカスタマイズしたテンプレート
+      # (oauth2-proxy-templates/sign_in.html)を使う。
+      OAUTH2_PROXY_CUSTOM_TEMPLATES_DIR: /templates
+      # oauth2-proxy既定のロゴ・フッターを非表示にし、テンプレート側のアイコンを使う。
+      OAUTH2_PROXY_CUSTOM_SIGN_IN_LOGO: "-"
+      OAUTH2_PROXY_FOOTER: "-"
 
 volumes:
   ollama_data:

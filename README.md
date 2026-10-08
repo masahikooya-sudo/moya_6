@@ -181,6 +181,10 @@ pptxはスライド番号)を一覧表示します。Ollamaが起動していな
   `/oauth2/sign_out` はoauth2-proxy側のセッションCookieを破棄するのみで、Google
   アカウント自体からはログアウトしない(別のGoogleアカウントに切り替えたい場合は、
   ブラウザ側でもGoogleからログアウトするか、シークレットウィンドウを利用する)。
+  ログアウト後に再度ログインが必要になった際は、`oauth2-proxy-templates/sign_in.html`
+  で用意したアプリと同じ配色のログイン画面(「Googleでログイン」ボタン)を経由する
+  (`OAUTH2_PROXY_SKIP_PROVIDER_BUTTON=false` + `OAUTH2_PROXY_CUSTOM_TEMPLATES_DIR`で
+  有効化。`true`のままだとこの画面を経由せずGoogleへ直接遷移してしまう)。
 - 個人情報チェックは `POST /api/pii-check`(multipart/form-data、`file`)で
   受け付ける。サーバーは拡張子に応じて以下のライブラリでテキストを抽出する。
   - `.xlsx`: [exceljs](https://github.com/exceljs/exceljs)
