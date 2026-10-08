@@ -198,3 +198,9 @@ docker compose down
      (詳細は [Ollamaの公式ドキュメント](https://github.com/ollama/ollama)を参照)。
   5. それでも遅い場合は、環境変数 `OLLAMA_TIMEOUT_MS` で待機時間を延長するか、
      GPU BOOSTタイプのインスタンスへの変更を検討してください。
+- Google認証(`oauth2-proxy`)経由でアクセスしている場合に「HTTPエラー: 502」が表示される
+  場合、appやOllamaのログにエラーが無くても、oauth2-proxyが既定の30秒でアップストリーム
+  (app)からの応答待ちを打ち切っていることが原因のことが多いです。個人情報チェックは
+  Ollamaの推論を待つため数分かかることがあるので、`docker-compose.auth-test.yml` /
+  `docker-compose.prod.yml` の `oauth2-proxy` サービスに
+  `OAUTH2_PROXY_UPSTREAM_TIMEOUT`(例: `1800s`)を設定してください。

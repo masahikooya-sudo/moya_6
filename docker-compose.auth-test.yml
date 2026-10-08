@@ -28,6 +28,10 @@ services:
       OAUTH2_PROXY_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAIN:-*}
       OAUTH2_PROXY_REDIRECT_URL: http://localhost:4180/oauth2/callback
       OAUTH2_PROXY_UPSTREAMS: http://app:3000
+      # oauth2-proxyは既定でアップストリーム(app)からの応答を30秒しか待たない。
+      # 個人情報チェックはOllamaの推論(CPUのみだと1回数分)を複数チャンク分
+      # 直列で待つため、既定のままだと途中で502 Bad Gatewayを返してしまう。
+      OAUTH2_PROXY_UPSTREAM_TIMEOUT: "1800s"
       OAUTH2_PROXY_HTTP_ADDRESS: "0.0.0.0:4180"
       # ローカルのhttp://では"Secure"クッキーが使えないため無効化する
       # (本番のTLS構成ではtrueにする。docker-compose.prod.yml参照)
