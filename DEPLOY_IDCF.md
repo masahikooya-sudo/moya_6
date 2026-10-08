@@ -124,11 +124,17 @@ python3 -c "import secrets,base64; print(base64.urlsafe_b64encode(secrets.token_
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 ```
 
-Gemmaモデルを取得します(初回のみ)。
+Gemmaモデルを取得します(初回のみ)。CPUのみのVMでは、まず軽量な `e2b` / `e4b` から
+試すことを推奨します(`gemma4:12b` のような大きいモデルは応答が数分かかり、
+タイムアウトしやすくなります)。
 
 ```bash
-docker compose -f docker-compose.prod.yml --env-file .env.production exec ollama ollama pull gemma4
+docker compose -f docker-compose.prod.yml --env-file .env.production exec ollama ollama pull gemma4:e4b
 ```
+
+応答速度やタイムアウトの調整については、`.env.production` に
+`OLLAMA_TIMEOUT_MS` / `OLLAMA_NUM_PREDICT` / `PII_CHUNK_CHAR_LIMIT` を追記してください
+(詳細はREADMEの「トラブルシューティング」を参照)。
 
 ## 9. 動作確認
 
@@ -142,7 +148,10 @@ docker compose -f docker-compose.prod.yml --env-file .env.production exec ollama
 - **アップデート**: `git pull` 後に `docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build`
 - **ログ確認**: `docker compose -f docker-compose.prod.yml logs -f app` / `oauth2-proxy` / `ollama`
 - **モデルデータ**: `ollama_data` という名前付きボリュームに保存されるため、コンテナ再作成後も
-  再ダウンロード不要です
+  再ダウンロード不要です。**`docker compose down -v` はこのボリュームごと削除し、
+  取得済みモデルが消えてしまう**ので、モデルデータを残したい場合は `-v` を付けずに
+  `docker compose down` を使ってください。モデルが消えてしまった場合は、
+  `ollama list` で空であることを確認した上で `ollama pull` からやり直してください。
 - **利用状況の監査**: このアプリはサーバー側での操作ログを保存していないため、
   利用状況の監査が必要な場合は `oauth2-proxy` のアクセスログ(誰がいつログインしたか)を
   別途保管・監視する運用を検討してください。
