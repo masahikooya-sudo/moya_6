@@ -18,6 +18,7 @@ import {
   parseLlmFindings,
   mergeFindings,
 } from './lib/pii.js';
+import { logPiiCheck } from './lib/auditLog.js';
 
 const EXTRACTORS = {
   '.xlsx': extractXlsx,
@@ -115,17 +116,31 @@ app.get('/api/pii-categories', (_req, res) => {
   res.json({ categories: PII_CATEGORIES });
 });
 
+// Google認証(oauth2-proxy)経由でアクセスしている場合、oauth2-proxyがログイン済み
+// ユーザーのメールアドレスをこのヘッダーに付与してアップストリーム(このapp)に
+// 転送する。認証なしで直接アクセスしている場合は付与されないため'unknown'になる。
+// (docker-compose.prod.yml / docker-compose.auth-test.yml の構成では、appコンテナは
+// oauth2-proxy経由以外からは到達できないため、このヘッダーは偽装されない。認証なしで
+// appに直接アクセスできる構成(ローカル開発用docker-compose.yml等)で使う場合、この
+// ヘッダーはクライアントが自由に送信できる値になるので、監査目的以外に使わないこと。)
+function getLogUser(req) {
+  return req.get('X-Forwarded-Email') || req.get('X-Forwarded-User') || 'unknown';
+}
+
 app.post('/api/pii-check', upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'ファイルが指定されていません。' });
   }
   const model = typeof req.body.model === 'string' && req.body.model.trim() ? req.body.model.trim() : MODEL_NAME;
   const ext = path.extname(req.file.originalname).toLowerCase();
+  const user = getLogUser(req);
+  const fileName = req.file.originalname;
 
   let extracted;
   try {
     extracted = await EXTRACTORS[ext](req.file.buffer);
   } catch (err) {
+    logPiiCheck({ user, fileName, fileType: ext, status: 'parse_error' });
     return res.status(400).json({
       error: `ファイルの解析に失敗しました。正しい${ext}ファイルか確認してください(パスワード保護されている場合は解除してから再度お試しください)。`,
     });
@@ -133,8 +148,9 @@ app.post('/api/pii-check', upload.single('file'), async (req, res) => {
 
   const { records, chunks, columnFindings = [] } = extracted;
   if (records.length === 0) {
+    logPiiCheck({ user, fileName, fileType: ext, status: 'extraction_failed' });
     return res.json({
-      fileName: req.file.originalname,
+      fileName,
       model,
       isClean: false,
       extractionFailed: true,
@@ -193,12 +209,23 @@ app.post('/api/pii-check', upload.single('file'), async (req, res) => {
   }
 
   const categoryOrder = new Map(PII_CATEGORIES.map((c, i) => [c.key, i]));
+  const categoryLabels = new Map(PII_CATEGORIES.map((c) => [c.key, c.label]));
   const findings = mergeFindings(rawFindings).sort(
     (a, b) => categoryOrder.get(a.category) - categoryOrder.get(b.category)
   );
 
+  logPiiCheck({
+    user,
+    fileName,
+    fileType: ext,
+    status: 'checked',
+    isClean: findings.length === 0,
+    findingsCount: findings.length,
+    categories: [...new Set(findings.map((f) => categoryLabels.get(f.category) || f.category))],
+  });
+
   res.json({
-    fileName: req.file.originalname,
+    fileName,
     model,
     isClean: findings.length === 0,
     findings,

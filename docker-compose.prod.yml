@@ -28,6 +28,11 @@ services:
       OLLAMA_NUM_PREDICT: ${OLLAMA_NUM_PREDICT:-500}
       PII_CHUNK_CHAR_LIMIT: ${PII_CHUNK_CHAR_LIMIT:-3000}
       PII_MAX_CHUNKS: ${PII_MAX_CHUNKS:-40}
+      TZ: ${TZ:-Asia/Tokyo}
+      PII_LOG_DIR: /app/logs
+      PII_LOG_RETENTION_DAYS: ${PII_LOG_RETENTION_DAYS:-90}
+    volumes:
+      - pii_logs:/app/logs
 
   oauth2-proxy:
     image: quay.io/oauth2-proxy/oauth2-proxy:latest
@@ -63,3 +68,4 @@ services:
 
 volumes:
   ollama_data:
+  pii_logs:

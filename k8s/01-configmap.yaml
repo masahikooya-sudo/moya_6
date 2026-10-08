@@ -16,6 +16,10 @@ data:
   OLLAMA_NUM_PREDICT: "500"
   PII_CHUNK_CHAR_LIMIT: "3000"
   PII_MAX_CHUNKS: "40"
+  # アップロード監査ログ(README「アップロード監査ログ」参照)
+  TZ: "Asia/Tokyo"
+  PII_LOG_DIR: "/app/logs"
+  PII_LOG_RETENTION_DAYS: "90"
   # ログインを許可する自社のGoogle Workspaceドメイン
   ALLOWED_EMAIL_DOMAIN: "example.co.jp"
   # 社員がアクセスするURLに合わせたコールバックURL

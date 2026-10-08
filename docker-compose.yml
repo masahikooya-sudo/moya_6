@@ -26,6 +26,12 @@ services:
       OLLAMA_HOST: http://ollama:11434
       MODEL_NAME: ${MODEL_NAME:-gemma4:e4b}
       PORT: 3000
+      TZ: ${TZ:-Asia/Tokyo}
+      PII_LOG_DIR: /app/logs
+      PII_LOG_RETENTION_DAYS: ${PII_LOG_RETENTION_DAYS:-90}
+    volumes:
+      - pii_logs:/app/logs
 
 volumes:
   ollama_data:
+  pii_logs:

@@ -32,6 +32,9 @@ spec:
           envFrom:
             - configMapRef:
                 name: app-config
+          volumeMounts:
+            - name: app-logs
+              mountPath: /app/logs
           resources:
             requests:
               cpu: "100m"
@@ -51,3 +54,7 @@ spec:
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 30
+      volumes:
+        - name: app-logs
+          persistentVolumeClaim:
+            claimName: app-logs

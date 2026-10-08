@@ -22,6 +22,7 @@ k8s/
 ├── 01-configmap.yaml           # 機密でない設定値
 ├── 02-secret.example.yaml      # Secretのテンプレート(そのままapplyしない)
 ├── 03-ollama-pvc.yaml          # モデルデータ永続化用PVC
+├── 03b-app-logs-pvc.yaml       # アップロード監査ログ永続化用PVC
 ├── 04-ollama-deployment.yaml   # Ollama(CPUのみ、ホスト非公開)
 ├── 05-ollama-service.yaml
 ├── 06-app-deployment.yaml      # このリポジトリのExpressサーバー
@@ -65,6 +66,8 @@ kubectl apply -f k8s/01-configmap.yaml
 - `ALLOWED_EMAIL_DOMAIN`: ログインを許可する自社のGoogle Workspaceドメイン
 - `OAUTH2_PROXY_REDIRECT_URL`: 手順2で登録したリダイレクトURI
 - `MODEL_NAME`: 使用するGemmaモデルのタグ(CPUのみなら軽量な`gemma4:e4b`等を推奨)
+- `PII_LOG_RETENTION_DAYS`: アップロード監査ログの保持日数(既定90日。README
+  「アップロード監査ログ」参照)
 
 Secretは `k8s/02-secret.example.yaml` を直接applyせず、コマンドラインで作成してください
 (リポジトリに秘密情報を残さないため)。
@@ -93,6 +96,7 @@ kubectl -n local-gemma-chat create secret tls app-tls \
 
 ```bash
 kubectl apply -f k8s/03-ollama-pvc.yaml
+kubectl apply -f k8s/03b-app-logs-pvc.yaml
 kubectl apply -f k8s/04-ollama-deployment.yaml
 kubectl apply -f k8s/05-ollama-service.yaml
 kubectl apply -f k8s/06-app-deployment.yaml
