@@ -1,0 +1,37 @@
+# ローカルPC上でGoogleログインの動作だけを試すためのオーバーレイ設定。
+# ドメイン/TLS証明書/VPNは使わず、Googleが特別に許可している
+# http://localhost 宛のリダイレクトを使う。
+#
+# 使い方:
+#   docker compose -f docker-compose.yml -f docker-compose.auth-test.yml up -d
+#
+# アクセスは http://localhost:3000 ではなく http://localhost:4180 を使うこと
+# (3000に直接アクセスするとoauth2-proxyを経由せず誰でも入れてしまう)。
+#
+# 本番(社内ネットワーク/VPN限定 + TLS)で使う場合は docker-compose.prod.yml と
+# DEPLOY_IDCF.md / DEPLOY_K8S.md を参照してください。このファイルはローカルでの
+# 動作確認専用です。
+services:
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:latest
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "127.0.0.1:4180:4180" # 自分のPCからのみアクセス可能にする
+    environment:
+      OAUTH2_PROXY_PROVIDER: google
+      OAUTH2_PROXY_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      OAUTH2_PROXY_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET}
+      # "*" = 制限なし(動作確認用)。実際の運用では自社ドメインに絞ること。
+      OAUTH2_PROXY_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAIN:-*}
+      OAUTH2_PROXY_REDIRECT_URL: http://localhost:4180/oauth2/callback
+      OAUTH2_PROXY_UPSTREAMS: http://app:3000
+      OAUTH2_PROXY_HTTP_ADDRESS: "0.0.0.0:4180"
+      # ローカルのhttp://では"Secure"クッキーが使えないため無効化する
+      # (本番のTLS構成ではtrueにする。docker-compose.prod.yml参照)
+      OAUTH2_PROXY_COOKIE_SECURE: "false"
+      OAUTH2_PROXY_COOKIE_SAMESITE: "lax"
+      OAUTH2_PROXY_REVERSE_PROXY: "true"
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"
