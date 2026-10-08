@@ -7,12 +7,27 @@ import {
   MAX_CHUNKS,
   extractXlsx,
   extractPdf,
+  extractTxt,
+  extractCsv,
+  extractDocx,
+  extractPptx,
+  extractJson,
   scanTextWithPatterns,
   scanLabeledFields,
   buildLlmMessages,
   parseLlmFindings,
   mergeFindings,
 } from './lib/pii.js';
+
+const EXTRACTORS = {
+  '.xlsx': extractXlsx,
+  '.pdf': extractPdf,
+  '.txt': extractTxt,
+  '.csv': extractCsv,
+  '.docx': extractDocx,
+  '.pptx': extractPptx,
+  '.json': extractJson,
+};
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -26,8 +41,8 @@ const upload = multer({
   limits: { fileSize: MAX_UPLOAD_BYTES },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (ext !== '.xlsx' && ext !== '.pdf') {
-      cb(new Error('対応していないファイル形式です(.xlsxまたは.pdfのみ対応)'));
+    if (!(ext in EXTRACTORS)) {
+      cb(new Error(`対応していないファイル形式です(${Object.keys(EXTRACTORS).join('/')}のみ対応)`));
       return;
     }
     cb(null, true);
@@ -109,7 +124,7 @@ app.post('/api/pii-check', upload.single('file'), async (req, res) => {
 
   let extracted;
   try {
-    extracted = ext === '.xlsx' ? await extractXlsx(req.file.buffer) : await extractPdf(req.file.buffer);
+    extracted = await EXTRACTORS[ext](req.file.buffer);
   } catch (err) {
     return res.status(400).json({
       error: `ファイルの解析に失敗しました。正しい${ext}ファイルか確認してください(パスワード保護されている場合は解除してから再度お試しください)。`,

@@ -144,9 +144,10 @@ piiForm.addEventListener('submit', async (e) => {
   const file = piiFileInput.files[0];
   if (!file) return;
 
+  const ALLOWED_EXTENSIONS = ['.xlsx', '.pdf', '.docx', '.pptx', '.csv', '.txt', '.json'];
   const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
-  if (ext !== '.xlsx' && ext !== '.pdf') {
-    piiResultEl.innerHTML = '<div class="pii-summary pii-summary-ng">対応していないファイル形式です(.xlsxまたは.pdfのみ対応)。</div>';
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    piiResultEl.innerHTML = `<div class="pii-summary pii-summary-ng">対応していないファイル形式です(${ALLOWED_EXTENSIONS.join('/')}のみ対応)。</div>`;
     return;
   }
 

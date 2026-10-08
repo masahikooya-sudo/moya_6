@@ -22,9 +22,10 @@
     <main class="content">
       <section class="card intro-card">
         <p class="pii-description">
-          マスキング済みの <code>.xlsx</code> / <code>.pdf</code> ファイルをアップロードすると、
-          正規表現によるパターンマッチングとAI(Gemma)の両方で、以下の個人情報が
-          残っていないかを確認します。
+          マスキング済みの <code>.xlsx</code> / <code>.pdf</code> / <code>.docx</code> /
+          <code>.pptx</code> / <code>.csv</code> / <code>.txt</code> / <code>.json</code>
+          ファイルをアップロードすると、正規表現によるパターンマッチングとAI(Gemma)の
+          両方で、以下の個人情報が残っていないかを確認します。
         </p>
         <div id="category-chips" class="chip-row"></div>
       </section>
@@ -35,10 +36,10 @@
             <div class="dropzone-icon">📄</div>
             <div class="dropzone-text">
               <strong>ファイルをドラッグ&ドロップ</strong>
-              <span>またはクリックして選択(.xlsx / .pdf、最大50MB)</span>
+              <span>またはクリックして選択(.xlsx/.pdf/.docx/.pptx/.csv/.txt/.json、最大50MB)</span>
             </div>
             <span id="dropzone-filename" class="dropzone-filename"></span>
-            <input type="file" id="pii-file" accept=".xlsx,.pdf" required hidden />
+            <input type="file" id="pii-file" accept=".xlsx,.pdf,.docx,.pptx,.csv,.txt,.json" required hidden />
           </label>
 
           <button type="submit" id="pii-check-btn">
