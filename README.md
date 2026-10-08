@@ -173,6 +173,14 @@ pptxはスライド番号)を一覧表示します。Ollamaが起動していな
   `MODEL_NAME` で指定したモデルが取得済みかを確認し、ヘッダーにモデル名を表示する
   (未取得の場合はチェック機能を無効化し警告を表示する)。モデルはアプリ全体で
   `MODEL_NAME` の1つに固定されており、画面上で切り替えることはできない。
+- `GET /api/whoami` は `X-Forwarded-Email` / `X-Forwarded-User` ヘッダー(Google認証
+  経由の場合のみoauth2-proxyが付与)からログイン中のユーザー名を返す。フロントエンドは
+  これが取得できた場合のみヘッダーにユーザー名と「ログアウト」リンク
+  (`/oauth2/sign_out?rd=/`、oauth2-proxyの組み込みエンドポイント)を表示する。認証なし
+  構成(ローカル開発用の`docker-compose.yml`単体)では何も表示されない。なお
+  `/oauth2/sign_out` はoauth2-proxy側のセッションCookieを破棄するのみで、Google
+  アカウント自体からはログアウトしない(別のGoogleアカウントに切り替えたい場合は、
+  ブラウザ側でもGoogleからログアウトするか、シークレットウィンドウを利用する)。
 - 個人情報チェックは `POST /api/pii-check`(multipart/form-data、`file`)で
   受け付ける。サーバーは拡張子に応じて以下のライブラリでテキストを抽出する。
   - `.xlsx`: [exceljs](https://github.com/exceljs/exceljs)

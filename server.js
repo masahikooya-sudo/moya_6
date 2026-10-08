@@ -118,14 +118,25 @@ app.get('/api/pii-categories', (_req, res) => {
 
 // Google認証(oauth2-proxy)経由でアクセスしている場合、oauth2-proxyがログイン済み
 // ユーザーのメールアドレスをこのヘッダーに付与してアップストリーム(このapp)に
-// 転送する。認証なしで直接アクセスしている場合は付与されないため'unknown'になる。
+// 転送する。認証なしで直接アクセスしている場合は付与されない。
 // (docker-compose.prod.yml / docker-compose.auth-test.yml の構成では、appコンテナは
 // oauth2-proxy経由以外からは到達できないため、このヘッダーは偽装されない。認証なしで
 // appに直接アクセスできる構成(ローカル開発用docker-compose.yml等)で使う場合、この
 // ヘッダーはクライアントが自由に送信できる値になるので、監査目的以外に使わないこと。)
-function getLogUser(req) {
-  return req.get('X-Forwarded-Email') || req.get('X-Forwarded-User') || 'unknown';
+function getForwardedUser(req) {
+  return req.get('X-Forwarded-Email') || req.get('X-Forwarded-User') || null;
 }
+
+function getLogUser(req) {
+  return getForwardedUser(req) || 'unknown';
+}
+
+// 画面にログイン中のユーザー名・ログアウトリンクを表示するかどうかの判定に使う。
+// oauth2-proxy経由でない(ヘッダーが付与されない)場合はnullを返し、フロントエンドは
+// ログイン状態の表示自体を行わない。
+app.get('/api/whoami', (req, res) => {
+  res.json({ user: getForwardedUser(req) });
+});
 
 app.post('/api/pii-check', upload.single('file'), async (req, res) => {
   if (!req.file) {

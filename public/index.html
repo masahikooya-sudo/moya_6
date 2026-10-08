@@ -15,7 +15,13 @@
           <h1>個人情報チェック</h1>
           <p>マスキング漏れをローカルLLM(Gemma)でダブルチェック</p>
         </div>
-        <span id="model-badge" class="model-badge" title="使用するモデル"></span>
+        <div class="hero-actions">
+          <span id="model-badge" class="model-badge" title="使用するモデル"></span>
+          <div id="user-info" class="user-info" hidden>
+            <span id="user-email" class="user-email"></span>
+            <a id="logout-link" class="logout-link" href="/oauth2/sign_out?rd=/">ログアウト</a>
+          </div>
+        </div>
       </div>
     </header>
 

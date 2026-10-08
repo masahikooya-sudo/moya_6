@@ -2,6 +2,8 @@ const piiForm = document.getElementById('pii-form');
 const piiFileInput = document.getElementById('pii-file');
 const piiCheckBtn = document.getElementById('pii-check-btn');
 const modelBadge = document.getElementById('model-badge');
+const userInfoEl = document.getElementById('user-info');
+const userEmailEl = document.getElementById('user-email');
 const piiResultEl = document.getElementById('pii-result');
 const dropzone = document.getElementById('dropzone');
 const dropzoneFilename = document.getElementById('dropzone-filename');
@@ -25,6 +27,23 @@ function escapeHtml(text) {
 function badgeClass(categoryKey) {
   const idx = categoryIndex.has(categoryKey) ? categoryIndex.get(categoryKey) : 14;
   return `badge-cat-${idx}`;
+}
+
+async function loadWhoAmI() {
+  try {
+    const res = await fetch('/api/whoami');
+    const data = await res.json();
+    if (!data.user) {
+      // Google認証を経由していない(認証なし構成への直接アクセス等)場合は、
+      // ログイン状態の表示・ログアウトリンクそのものを出さない。
+      userInfoEl.hidden = true;
+      return;
+    }
+    userEmailEl.textContent = data.user;
+    userInfoEl.hidden = false;
+  } catch {
+    userInfoEl.hidden = true;
+  }
 }
 
 async function loadCategoryChips() {
@@ -178,3 +197,4 @@ piiForm.addEventListener('submit', async (e) => {
 
 loadCategoryChips();
 checkPiiModel();
+loadWhoAmI();
