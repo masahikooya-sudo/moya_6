@@ -31,20 +31,20 @@ Ollama を別途インストールする必要はありません。
 2. Gemma モデルを Ollama コンテナに取得する（初回のみ）。
 
    ```bash
-   docker compose exec ollama ollama pull gemma4
+   docker compose exec ollama ollama pull gemma4:e4b
    ```
 
    > **注記:** Gemma 4 は `e2b` / `e4b` / `12b` / `26b`(MoE) / `31b` の5サイズが
-   > `gemma4` ライブラリで公開されています。タグを省略した `gemma4`(=`gemma4:latest`)は
-   > オンデバイス向けの `e4b`(約9.6GB)を取得します。マシンのスペックに応じて
-   > `docker compose exec ollama ollama pull gemma4:12b` のように明示的にサイズを
-   > 指定することもできます。利用可能なタグ一覧は
+   > `gemma4` ライブラリで公開されています。このアプリは既定で軽量な `e4b` を
+   > 使用します(CPUのみの環境でも比較的高速に動作するため)。利用可能なタグ一覧は
    > https://ollama.com/library/gemma4 で確認できます。
 
 3. ブラウザで http://localhost:3000 を開く。
 
-使用するモデル(サイズ)を変えたい場合は、`.env` に `MODEL_NAME=gemma4:12b` のように設定してから
-`docker compose up -d --build` を実行してください（`.env.example` 参照）。
+使用するモデルはアプリ全体で1つに固定されています（画面上での切り替えはできません）。
+変更したい場合は、`.env` に `MODEL_NAME=gemma4:12b` のように設定してから
+`docker compose up -d --build` を実行し、該当モデルを `ollama pull` 済みにしてください
+（`.env.example` 参照）。
 NVIDIA GPU を使いたい場合は `docker-compose.yml` 内の `deploy.resources` のコメントを
 外し、[nvidia-container-toolkit](https://github.com/NVIDIA/nvidia-container-toolkit) を
 ホストにインストールしてください。
@@ -66,7 +66,7 @@ docker compose down
 1. Gemma モデルを取得する。
 
    ```bash
-   ollama pull gemma4
+   ollama pull gemma4:e4b
    ```
 
 2. 依存パッケージをインストールする。
@@ -82,7 +82,7 @@ docker compose down
    | ---------------------- | ---------------------------- | --------------------------------------------- |
    | `PORT`                 | `3000`                       | Web アプリの待受ポート                        |
    | `OLLAMA_HOST`          | `http://127.0.0.1:11434`     | Ollama サーバーのアドレス                     |
-   | `MODEL_NAME`           | `gemma4`                     | 使用する Ollama モデル名/タグ                 |
+   | `MODEL_NAME`           | `gemma4:e4b`                 | 使用する Ollama モデル名/タグ(アプリ全体で1つに固定) |
    | `OLLAMA_TIMEOUT_MS`    | `300000`(5分)                | 個人情報チェックでOllamaの応答を待つ上限時間  |
    | `OLLAMA_NUM_PREDICT`   | `500`                        | AI検出1回あたりの最大生成トークン数(Ollamaの`num_predict`。既定は実質無制限のため上限を設定し、生成が終わらないことによるタイムアウトを防ぐ) |
    | `PII_CHUNK_CHAR_LIMIT` | `3000`                       | 個人情報チェックでAIに1回に渡すテキストの最大文字数。小さくするほど1回あたりの応答は速くなるが、呼び出し回数が増える |
@@ -91,7 +91,7 @@ docker compose down
 4. アプリを起動する。
 
    ```bash
-   MODEL_NAME=gemma4 npm start
+   MODEL_NAME=gemma4:e4b npm start
    ```
 
 5. ブラウザで http://localhost:3000 を開く。
@@ -153,9 +153,11 @@ docker compose down
 
 ## 仕組み
 
-- サーバーは `GET /api/models` で Ollama の `GET /api/tags` を呼び出し、ダウンロード済み
-  モデルの一覧をヘッダーのセレクトボックスに表示する。
-- 個人情報チェックは `POST /api/pii-check`(multipart/form-data、`file` と `model`)で
+- サーバーは `GET /api/models` で Ollama の `GET /api/tags` を呼び出し、環境変数
+  `MODEL_NAME` で指定したモデルが取得済みかを確認し、ヘッダーにモデル名を表示する
+  (未取得の場合はチェック機能を無効化し警告を表示する)。モデルはアプリ全体で
+  `MODEL_NAME` の1つに固定されており、画面上で切り替えることはできない。
+- 個人情報チェックは `POST /api/pii-check`(multipart/form-data、`file`)で
   受け付ける。サーバーは `.xlsx` は [exceljs](https://github.com/exceljs/exceljs)、
   `.pdf` は [pdf-parse](https://github.com/mehmet-kozan/pdf-parse) でテキストを抽出し、
   `lib/pii.js` の正規表現でパターン検出、抽出テキストをチャンク分割してOllamaの

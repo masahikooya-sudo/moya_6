@@ -111,15 +111,22 @@ body {
   opacity: 0.9;
 }
 
-.model-select {
+.model-badge {
   font-size: 0.8rem;
   color: var(--text);
   background: var(--panel);
   border: 1px solid transparent;
   border-radius: 999px;
   padding: 6px 12px;
-  max-width: 180px;
+  max-width: 220px;
+  white-space: nowrap;
   box-shadow: var(--shadow);
+}
+
+.model-badge.model-badge-warn {
+  background: linear-gradient(120deg, #fbbf24, #d97706);
+  color: #fff;
+  box-shadow: none;
 }
 
 .content {

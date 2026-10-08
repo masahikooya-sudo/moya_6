@@ -8,8 +8,8 @@ metadata:
 data:
   # docker-compose.yml と同様、Kubernetes Service名(ollama)で名前解決される
   OLLAMA_HOST: "http://ollama:11434"
-  # CPUのみのノードではまず軽量な e2b/e4b から試すことを推奨(README参照)
-  MODEL_NAME: "gemma4"
+  # アプリ全体で1つのモデルに固定(README参照)。CPUのみのノードでは軽量な e4b を既定にしている
+  MODEL_NAME: "gemma4:e4b"
   PORT: "3000"
   # 個人情報チェックのAI呼び出し関連チューニング(README「Ollamaのチューニング」参照)
   OLLAMA_TIMEOUT_MS: "300000"

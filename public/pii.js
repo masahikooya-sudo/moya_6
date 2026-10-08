@@ -1,7 +1,7 @@
 const piiForm = document.getElementById('pii-form');
 const piiFileInput = document.getElementById('pii-file');
 const piiCheckBtn = document.getElementById('pii-check-btn');
-const piiModelSelect = document.getElementById('pii-model-select');
+const modelBadge = document.getElementById('model-badge');
 const piiResultEl = document.getElementById('pii-result');
 const dropzone = document.getElementById('dropzone');
 const dropzoneFilename = document.getElementById('dropzone-filename');
@@ -41,35 +41,35 @@ async function loadCategoryChips() {
   }
 }
 
+let modelAvailable = false;
+
 function setModelUnavailable(message) {
-  piiModelSelect.innerHTML = `<option value="">${escapeHtml(message)}</option>`;
-  piiModelSelect.disabled = true;
+  modelAvailable = false;
+  modelBadge.textContent = '利用不可';
+  modelBadge.classList.add('model-badge-warn');
   piiCheckBtn.disabled = true;
   piiResultEl.innerHTML = `<div class="pii-summary pii-summary-warn">⚠️ ${escapeHtml(message)}</div>`;
 }
 
-async function loadPiiModels() {
+async function checkPiiModel() {
   try {
     const res = await fetch('/api/models');
     const data = await res.json();
-    if (!data.models?.length) {
-      // Ollamaが未接続、またはモデルが1つも取得されていない状態。
-      // dataclass.default(タグなしのモデル名)を選択肢として表示すると、
-      // 実際にはOllama側に存在せず「model not found」エラーになるだけなので、
-      // 選べない状態にして原因が分かるメッセージを表示する。
-      setModelUnavailable('Ollamaに接続できないか、モデルが取得されていません。ollama pullでモデルを取得してから再読み込みしてください。');
+    const modelName = data.default;
+    if (!data.models?.includes(modelName)) {
+      // 設定されているモデル(MODEL_NAME)がOllama側にまだ取得されていない状態。
+      // 存在しないモデルで呼び出すと「model not found」エラーになるだけなので、
+      // チェックできない状態にして原因が分かるメッセージを表示する。
+      setModelUnavailable(
+        `モデル「${modelName}」が取得されていません。サーバーで ollama pull ${modelName} を実行してから再読み込みしてください。`
+      );
       return;
     }
-    piiModelSelect.disabled = false;
-    piiModelSelect.innerHTML = '';
-    for (const name of data.models) {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      piiModelSelect.appendChild(opt);
-    }
+    modelAvailable = true;
+    modelBadge.textContent = modelName;
+    modelBadge.classList.remove('model-badge-warn');
   } catch {
-    setModelUnavailable('モデル一覧を取得できませんでした。ページを再読み込みしてください。');
+    setModelUnavailable('モデルの状態を確認できませんでした。ページを再読み込みしてください。');
   }
 }
 
@@ -150,7 +150,7 @@ piiForm.addEventListener('submit', async (e) => {
     return;
   }
 
-  if (!piiModelSelect.value) {
+  if (!modelAvailable) {
     piiResultEl.innerHTML = '<div class="pii-summary pii-summary-warn">⚠️ 利用可能なモデルがありません。Ollamaの状態を確認してから再読み込みしてください。</div>';
     return;
   }
@@ -160,7 +160,6 @@ piiForm.addEventListener('submit', async (e) => {
 
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('model', piiModelSelect.value);
 
   try {
     const res = await fetch('/api/pii-check', { method: 'POST', body: formData });
@@ -177,4 +176,4 @@ piiForm.addEventListener('submit', async (e) => {
 });
 
 loadCategoryChips();
-loadPiiModels();
+checkPiiModel();

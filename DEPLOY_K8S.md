@@ -117,7 +117,7 @@ kubectl apply -f k8s/10-ingress.yaml
 ## 6. Gemmaモデルを取得する(初回のみ)
 
 ```bash
-kubectl -n local-gemma-chat exec -it deploy/ollama -- ollama pull gemma4
+kubectl -n local-gemma-chat exec -it deploy/ollama -- ollama pull gemma4:e4b
 ```
 
 ## 7. 動作確認

@@ -22,7 +22,7 @@ services:
     # ホストには公開しない(oauth2-proxy経由でのみアクセス可能にする)
     environment:
       OLLAMA_HOST: http://ollama:11434
-      MODEL_NAME: ${MODEL_NAME:-gemma4}
+      MODEL_NAME: ${MODEL_NAME:-gemma4:e4b}
       PORT: 3000
       OLLAMA_TIMEOUT_MS: ${OLLAMA_TIMEOUT_MS:-300000}
       OLLAMA_NUM_PREDICT: ${OLLAMA_NUM_PREDICT:-500}
