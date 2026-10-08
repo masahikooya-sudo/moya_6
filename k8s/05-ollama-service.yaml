@@ -1,0 +1,13 @@
+# ClusterIP(クラスタ内部のみ)。ホストやインターネットには一切公開しない。
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: local-gemma-chat
+spec:
+  type: ClusterIP
+  selector:
+    app: ollama
+  ports:
+    - port: 11434
+      targetPort: 11434

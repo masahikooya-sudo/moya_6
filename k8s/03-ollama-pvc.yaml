@@ -1,0 +1,15 @@
+# モデルデータ(数GB〜数十GB)を永続化するPVC。
+# storageClassName はクラスタのデフォルトを使う場合は削除して構いません。
+# IDCFクラウド コンテナのデフォルトStorageClass名が分かる場合はそちらを指定してください。
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-data
+  namespace: local-gemma-chat
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 30Gi
+  # storageClassName: <クラスタのStorageClass名>

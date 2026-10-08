@@ -1,0 +1,52 @@
+# ローカルPC上でGoogleログインの動作だけを試すためのオーバーレイ設定。
+# ドメイン/TLS証明書/VPNは使わず、Googleが特別に許可している
+# http://localhost 宛のリダイレクトを使う。
+#
+# 使い方:
+#   docker compose -f docker-compose.yml -f docker-compose.auth-test.yml up -d
+#
+# アクセスは http://localhost:3000 ではなく http://localhost:4180 を使うこと
+# (3000に直接アクセスするとoauth2-proxyを経由せず誰でも入れてしまう)。
+#
+# 本番(社内ネットワーク/VPN限定 + TLS)で使う場合は docker-compose.prod.yml と
+# DEPLOY_IDCF.md / DEPLOY_K8S.md を参照してください。このファイルはローカルでの
+# 動作確認専用です。
+services:
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:latest
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "127.0.0.1:4180:4180" # 自分のPCからのみアクセス可能にする
+    volumes:
+      - ./oauth2-proxy-templates:/templates:ro
+    environment:
+      OAUTH2_PROXY_PROVIDER: google
+      OAUTH2_PROXY_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      OAUTH2_PROXY_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET}
+      # "*" = 制限なし(動作確認用)。実際の運用では自社ドメインに絞ること。
+      OAUTH2_PROXY_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAIN:-*}
+      OAUTH2_PROXY_REDIRECT_URL: http://localhost:4180/oauth2/callback
+      OAUTH2_PROXY_UPSTREAMS: http://app:3000
+      # oauth2-proxyは既定でアップストリーム(app)からの応答を30秒しか待たない。
+      # 個人情報チェックはOllamaの推論(CPUのみだと1回数分)を複数チャンク分
+      # 直列で待つため、既定のままだと途中で502 Bad Gatewayを返してしまう。
+      OAUTH2_PROXY_UPSTREAM_TIMEOUT: "1800s"
+      OAUTH2_PROXY_HTTP_ADDRESS: "0.0.0.0:4180"
+      # ローカルのhttp://では"Secure"クッキーが使えないため無効化する
+      # (本番のTLS構成ではtrueにする。docker-compose.prod.yml参照)
+      OAUTH2_PROXY_COOKIE_SECURE: "false"
+      OAUTH2_PROXY_COOKIE_SAMESITE: "lax"
+      OAUTH2_PROXY_REVERSE_PROXY: "true"
+      # falseにして、ログイン画面(アプリと同じ配色の「Googleでログイン」ボタン)を
+      # 経由させる。trueだとログイン画面を経由せずGoogleへ直接遷移してしまい、
+      # ログアウト後に独自のログイン画面を表示できなくなる。
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "false"
+      # ログイン画面をアプリと同じ配色にカスタマイズしたテンプレート
+      # (oauth2-proxy-templates/sign_in.html)を使う。
+      OAUTH2_PROXY_CUSTOM_TEMPLATES_DIR: /templates
+      # oauth2-proxy既定のロゴ・フッターを非表示にし、テンプレート側のアイコンを使う。
+      OAUTH2_PROXY_CUSTOM_SIGN_IN_LOGO: "-"
+      OAUTH2_PROXY_FOOTER: "-"

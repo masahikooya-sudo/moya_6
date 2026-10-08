@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>個人情報チェック</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div class="hero-inner">
+        <div class="hero-icon">🛡️</div>
+        <div class="hero-text">
+          <h1>個人情報チェック</h1>
+          <p>マスキング漏れをローカルLLM(Gemma)でダブルチェック</p>
+        </div>
+        <div class="hero-actions">
+          <span id="model-badge" class="model-badge" title="使用するモデル"></span>
+          <div id="user-info" class="user-info" hidden>
+            <span id="user-email" class="user-email"></span>
+            <a id="logout-link" class="logout-link" href="/oauth2/sign_out?rd=/">ログアウト</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <section class="card intro-card">
+        <p class="pii-description">
+          マスキング済みの <code>.xlsx</code> / <code>.pdf</code> / <code>.docx</code> /
+          <code>.pptx</code> / <code>.csv</code> / <code>.txt</code> / <code>.json</code>
+          ファイルをアップロードすると、正規表現によるパターンマッチングとAI(Gemma)の
+          両方で、以下の個人情報が残っていないかを確認します。
+        </p>
+        <div id="category-chips" class="chip-row"></div>
+      </section>
+
+      <section class="card upload-card">
+        <form id="pii-form" class="pii-form">
+          <label id="dropzone" class="dropzone" for="pii-file">
+            <div class="dropzone-icon">📄</div>
+            <div class="dropzone-text">
+              <strong>ファイルをドラッグ&ドロップ</strong>
+              <span>またはクリックして選択(.xlsx/.pdf/.docx/.pptx/.csv/.txt/.json、最大50MB)</span>
+            </div>
+            <span id="dropzone-filename" class="dropzone-filename"></span>
+            <input type="file" id="pii-file" accept=".xlsx,.pdf,.docx,.pptx,.csv,.txt,.json" required hidden />
+          </label>
+
+          <button type="submit" id="pii-check-btn">
+            <span class="btn-icon">🔍</span>チェックする
+          </button>
+        </form>
+
+        <p class="pii-caveat">
+          ※ このチェックは補助的なものです。100%の検出を保証するものではないため、
+          結果によらず目視でも必ず確認してください。
+        </p>
+      </section>
+
+      <section id="pii-result" class="pii-result"></section>
+    </main>
+
+    <footer class="page-footer">
+      <p>アップロードしたファイルの内容や検出された個人情報の中身は保存されません(すべて
+        この端末/サーバー内で処理されます)。監査のため、アップロード日時・ユーザー名・
+        ファイル名・判定結果の概要のみサーバーにログとして記録されます。</p>
+    </footer>
+  </div>
+
+  <script src="pii.js"></script>
+</body>
+</html>

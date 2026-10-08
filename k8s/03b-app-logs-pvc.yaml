@@ -1,0 +1,15 @@
+# アップロード監査ログ(メタデータのみ、ファイル本体や検出結果の中身は含まない)を
+# 永続化するPVC。90日分保持してもテキストログなので容量は小さい想定。
+# storageClassName はクラスタのデフォルトを使う場合は削除して構いません。
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app-logs
+  namespace: local-gemma-chat
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  # storageClassName: <クラスタのStorageClass名>
